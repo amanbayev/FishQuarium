@@ -26,12 +26,20 @@
     button.primary:hover { background: #ffa040; }
     #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(2, 16, 28, .6); padding: 16px; }
     #modal.open { display: flex; }
-    #card { background: #0b2c42; color: #e8f7ff; border-radius: 20px; padding: 20px; width: min(520px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    #card { background: #0b2c42; color: #e8f7ff; border-radius: 20px; padding: 20px; width: min(560px, 100%); max-height: 96vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
     #card h2 { margin: 0 0 6px; font-size: 22px; }
     #card p { margin: 0 0 12px; opacity: .8; font-size: 14px; line-height: 1.4; }
-    #previewWrap { background: linear-gradient(#1c8fb8, #0a4a6b); border-radius: 14px; height: 240px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-    #preview { max-width: 90%; max-height: 90%; }
-    #card label { display: flex; align-items: center; gap: 10px; font-size: 14px; margin-bottom: 14px; }
+    #previewWrap { background: linear-gradient(#1c8fb8, #0a4a6b); border-radius: 14px; aspect-ratio: 512 / 460; max-height: 46vh; margin-left: auto; margin-right: auto; margin-bottom: 12px; }
+    #preview { width: 100%; height: 100%; touch-action: none; cursor: grab; border-radius: 14px; }
+    #modal { overflow: auto; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .row button { padding: 8px 12px; font-size: 14px; }
+    .row button.on { background: #1c7ed6; border-color: #74c0fc; }
+    #palette { display: inline-flex; gap: 6px; }
+    .sw { width: 30px; height: 30px; border-radius: 50%; border: 3px solid rgba(255,255,255,.35); padding: 0; }
+    .sw.on { border-color: #fff; transform: scale(1.15); }
+    #customColor { width: 36px; height: 34px; padding: 0; border: none; background: none; }
+    #card label { display: flex; align-items: center; gap: 10px; font-size: 14px; margin-bottom: 8px; }
     #card input[type=range] { flex: 1; }
     #actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
   </style>
@@ -50,8 +58,18 @@
   <div id="modal">
     <div id="card">
       <h2>Новая рыбка</h2>
-      <p>Рыбка должна смотреть вправо →. Если бумага вырезалась плохо, подвигайте ползунок.</p>
-      <div id="previewWrap"><canvas id="preview"></canvas></div>
+      <p>Выберите форму, подвиньте рисунок пальцем или мышкой и раскрасьте, если хочется. Рыбка должна смотреть вправо →</p>
+      <div id="previewWrap"><canvas id="preview" width="512" height="460"></canvas></div>
+      <div class="row" id="presets"></div>
+      <div class="row">
+        <button id="moveBtn" class="on">✋ Двигать</button>
+        <button id="paintBtn">🖌 Красить</button>
+        <span id="palette"></span>
+        <input id="customColor" type="color" value="#ff66cc" title="Свой цвет" />
+        <button id="eraseBtn" title="Стереть краску">🧽</button>
+      </div>
+      <label>Размер <input id="zoom" type="range" min="50" max="250" value="100" /></label>
+      <label>Кисть <input id="brush" type="range" min="6" max="60" value="24" /></label>
       <label>Вырезание <input id="thr" type="range" min="12" max="140" value="48" /></label>
       <div id="actions">
         <button id="flipBtn">⇄ Отзеркалить</button>

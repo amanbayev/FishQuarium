@@ -35,6 +35,32 @@ function flatGeo(tris) {
   return g;
 }
 
+// Плоские плавники (хвост, спинной, анальный) в плоскости z = 0.
+function flatFins(sp) {
+  const tris = [];
+  // хвост
+  const th = Math.min(0.5, sp.h * 1.15);
+  tris.push([-0.52, 0.07, 0], [-1, th, 0], [-0.84, 0, 0]);
+  tris.push([-0.52, -0.07, 0], [-0.84, 0, 0], [-1, -th, 0]);
+  tris.push([-0.52, 0.07, 0], [-0.84, 0, 0], [-0.52, -0.07, 0]);
+  // спинной и анальный плавники
+  const strip = (xa, xb, sign, height) => {
+    const n = 10;
+    const pt = (i) => {
+      const t = i / n, x = xa + (xb - xa) * t, hb = Hx(x, sp);
+      const lift = height * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.7)), 0.6);
+      return [[x, sign * hb * 0.8, 0], [x - lift * 0.5, sign * (hb + lift), 0]];
+    };
+    for (let i = 0; i < n; i++) {
+      const [b0, t0] = pt(i), [b1, t1] = pt(i + 1);
+      tris.push(b0, t0, b1, t0, t1, b1);
+    }
+  };
+  strip(0.5, -0.4, 1, sp.dorsal);
+  strip(0.05, -0.42, -1, sp.dorsal * 0.8);
+  return tris;
+}
+
 export function fishGeometry(sp) {
   const NS = 30, NR = 16;
   const pos = [], uv = [], idx = [];
@@ -57,27 +83,7 @@ export function fishGeometry(sp) {
   body.computeVertexNormals();
   body = body.toNonIndexed();
 
-  const tris = [];
-  // хвост
-  const th = Math.min(0.5, sp.h * 1.15);
-  tris.push([-0.52, 0.07, 0], [-1, th, 0], [-0.84, 0, 0]);
-  tris.push([-0.52, -0.07, 0], [-0.84, 0, 0], [-1, -th, 0]);
-  tris.push([-0.52, 0.07, 0], [-0.84, 0, 0], [-0.52, -0.07, 0]);
-  // спинной и анальный плавники
-  const strip = (xa, xb, sign, height) => {
-    const n = 10;
-    const pt = (i) => {
-      const t = i / n, x = xa + (xb - xa) * t, hb = Hx(x, sp);
-      const lift = height * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.7)), 0.6);
-      return [[x, sign * hb * 0.8, 0], [x - lift * 0.5, sign * (hb + lift), 0]];
-    };
-    for (let i = 0; i < n; i++) {
-      const [b0, t0] = pt(i), [b1, t1] = pt(i + 1);
-      tris.push(b0, t0, b1, t0, t1, b1);
-    }
-  };
-  strip(0.5, -0.4, 1, sp.dorsal);
-  strip(0.05, -0.42, -1, sp.dorsal * 0.8);
+  const tris = flatFins(sp);
   // грудные плавники
   for (const sgn of [1, -1]) {
     const W = Hx(0.4, sp) * sp.w * 1.2;
@@ -190,4 +196,37 @@ export function fishTexture(sp) {
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
   return tex;
+}
+
+// Формы для детских рыбок: рисунок натягивается на одну из них.
+export const PRESETS = [
+  { label: 'Обычная', h: 0.34, w: 0.45, skew: 1.3, pow: 0.7, dorsal: 0.16 },
+  { label: 'Высокая', h: 0.5, w: 0.27, skew: 1.35, pow: 0.58, dorsal: 0.2 },
+  { label: 'Длинная', h: 0.2, w: 0.55, skew: 1.2, pow: 0.8, dorsal: 0.1 },
+  { label: 'Круглая', h: 0.46, w: 0.62, skew: 1.15, pow: 0.5, dorsal: 0.1 },
+  { label: 'Сомик', h: 0.27, w: 0.72, skew: 1.5, pow: 0.7, dorsal: 0.2, barbels: true },
+];
+
+export const TEX_SIZE = 512;
+
+// Маска силуэта (вид сбоку) в раскладке текстуры: белое там, где рыбка.
+export function silhouetteMask(sp) {
+  const S = TEX_SIZE, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  const px = (x) => ((x + 1) / 2) * S, py = (y) => (1 - (y + 0.8) / 1.6) * S;
+  g.fillStyle = '#fff';
+  g.beginPath();
+  const N = 60;
+  for (let i = 0; i <= N; i++) { const s = i / N; g.lineTo(px(bodyX(s)), py(profile(s, sp))); }
+  for (let i = N; i >= 0; i--) { const s = i / N; g.lineTo(px(bodyX(s)), py(-profile(s, sp))); }
+  g.fill();
+  const t = flatFins(sp);
+  for (let i = 0; i < t.length; i += 3) {
+    g.beginPath(); g.moveTo(px(t[i][0]), py(t[i][1])); g.lineTo(px(t[i + 1][0]), py(t[i + 1][1])); g.lineTo(px(t[i + 2][0]), py(t[i + 2][1])); g.closePath(); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.stroke();
+  }
+  const d = g.getImageData(0, 0, S, S).data;
+  let x0 = S, y0 = S, x1 = 0, y1 = 0;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (d[(y * S + x) * 4 + 3] > 128) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  return { canvas: c, box: { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 } };
 }

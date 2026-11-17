@@ -5,8 +5,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { SPECIES, fishGeometry, fishTexture } from './fish.js';
-import { loadToCanvas, cutout } from './cutout.js';
+import { SPECIES, PRESETS, fishGeometry, fishTexture } from './fish.js';
+import { initEditor, editFish } from './editor.js';
 import { buildRoom } from './room.js';
 
 // ---------- утилиты ----------
@@ -548,23 +548,33 @@ const kidSchool = { center: new THREE.Vector3(0, 3, 0), target: new THREE.Vector
 const kids = { agents: [], schools: [kidSchool], speed: 0.8, sep: 1.3, solo: false, followCam: true };
 groups.push(kids);
 
-function addKidFish(dataUrl) {
+const presetGeo = [];
+// entry — либо { preset, tex } (объёмная рыбка), либо строка (старый плоский рисунок).
+function addKidFish(entry) {
+  const flat = typeof entry === 'string';
   const img = new Image();
   img.onload = () => {
     const tex = new THREE.Texture(img);
     tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true; tex.anisotropy = 4;
     const phase = { value: 0 };
-    const mat = wet({ map: tex, emissiveMap: tex, emissive: 0x555555, alphaTest: 0.5, side: THREE.DoubleSide }, 'kid', phase);
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2 * img.height / img.width, 28, 1), mat);
+    let mesh;
+    if (flat) {
+      mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2 * img.height / img.width, 28, 1),
+        wet({ map: tex, emissiveMap: tex, emissive: 0x555555, alphaTest: 0.5, side: THREE.DoubleSide }, 'kid', phase));
+    } else {
+      const i = entry.preset in PRESETS ? entry.preset : 0;
+      presetGeo[i] ||= fishGeometry(PRESETS[i]);
+      mesh = new THREE.Mesh(presetGeo[i], wet({ map: tex, emissiveMap: tex, emissive: 0x2a2a2a, roughness: 0.5, side: THREE.DoubleSide }, 'kid', phase));
+    }
     mesh.rotation.order = 'YZX';
     mesh.frustumCulled = false;
     scene.add(mesh);
-    const ag = makeAgent(kidSchool, 0.4 + Math.random() * 0.12, 2);
-    ag.mesh = mesh; ag.phaseU = phase;
+    const ag = makeAgent(kidSchool, 0.36 + Math.random() * 0.1, 2);
+    ag.mesh = mesh; ag.phaseU = phase; ag.flat = flat;
     kids.agents.push(ag);
     document.getElementById('clearBtn').hidden = false;
   };
-  img.src = dataUrl;
+  img.src = flat ? entry : entry.tex;
 }
 
 function updateGroup(g, dt, t) {
@@ -801,37 +811,23 @@ const loadSaved = () => { try { return JSON.parse(localStorage.getItem(STORE) ||
 let saved = loadSaved();
 saved.forEach(addKidFish);
 
-const preview = $('preview'), fileInput = $('file');
-let srcCanvas = null, flip = false, result = null;
-function refreshPreview() {
-  result = cutout(srcCanvas, +$('thr').value, flip);
-  const g = preview.getContext('2d');
-  if (!result) { preview.width = preview.height = 1; g.clearRect(0, 0, 1, 1); return; }
-  preview.width = result.width; preview.height = result.height;
-  g.drawImage(result, 0, 0);
-}
+const fileInput = $('file');
+initEditor();
 $('addBtn').onclick = () => fileInput.click();
 fileInput.onchange = async () => {
   const f = fileInput.files[0]; fileInput.value = '';
   if (!f) return;
-  try { srcCanvas = await loadToCanvas(f); } catch (e) { alert(e.message); return; }
-  flip = false; refreshPreview(); modal.classList.add('open');
-};
-$('thr').oninput = refreshPreview;
-$('flipBtn').onclick = () => { flip = !flip; refreshPreview(); };
-$('cancelBtn').onclick = () => modal.classList.remove('open');
-$('okBtn').onclick = () => {
-  if (!result) { alert('Рыбка не нашлась — подвигайте ползунок или переснимите фото.'); return; }
-  const url = result.toDataURL('image/png');
-  addKidFish(url);
-  saved.push(url);
+  let entry;
+  try { entry = await editFish(f); } catch (e) { alert(e.message); return; }
+  if (!entry) return;
+  addKidFish(entry);
+  saved.push(entry);
   try { localStorage.setItem(STORE, JSON.stringify(saved)); }
   catch { saved.pop(); alert('Память браузера заполнена: рыбка поплавает до перезагрузки страницы.'); }
-  modal.classList.remove('open');
 };
 $('clearBtn').onclick = () => {
   if (!confirm('Убрать всех нарисованных рыбок?')) return;
-  for (const a of kids.agents) { scene.remove(a.mesh); a.mesh.geometry.dispose(); a.mesh.material.map.dispose(); a.mesh.material.dispose(); }
+  for (const a of kids.agents) { scene.remove(a.mesh); if (a.flat) a.mesh.geometry.dispose(); a.mesh.material.map.dispose(); a.mesh.material.dispose(); }
   kids.agents.length = 0; saved = []; localStorage.removeItem(STORE);
   $('clearBtn').hidden = true;
 };
@@ -850,4 +846,4 @@ function frame() {
   composer.render();
 }
 renderer.setAnimationLoop(frame);
-window.__aq = { camera, cam, input, flakes, groups, feed };
+window.__aq = { camera, cam, input, flakes, groups, feed, kids };
