@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Аквариум</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #06324a; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    canvas#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+    #hint {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+      color: #e8f7ff; font-size: 15px; letter-spacing: .02em; text-align: center;
+      padding: 10px 18px; border-radius: 999px; background: rgba(4, 30, 48, .45);
+      backdrop-filter: blur(6px); transition: opacity 1.2s; pointer-events: none; max-width: 80vw;
+    }
+    #hint.hidden { opacity: 0; }
+    #bar { position: fixed; right: 18px; bottom: 18px; display: flex; gap: 10px; transition: opacity .6s; }
+    #bar.idle { opacity: 0; }
+    button {
+      font: inherit; font-size: 16px; font-weight: 600; color: #e8f7ff; cursor: pointer;
+      border: 1px solid rgba(255,255,255,.25); border-radius: 14px; padding: 12px 16px;
+      background: rgba(4, 30, 48, .55); backdrop-filter: blur(6px);
+    }
+    button:hover { background: rgba(10, 60, 90, .75); }
+    button.primary { background: #ff8a1f; border-color: #ffb066; color: #2a1200; }
+    button.primary:hover { background: #ffa040; }
+    #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(2, 16, 28, .6); padding: 16px; }
+    #modal.open { display: flex; }
+    #card { background: #0b2c42; color: #e8f7ff; border-radius: 20px; padding: 20px; width: min(520px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    #card h2 { margin: 0 0 6px; font-size: 22px; }
+    #card p { margin: 0 0 12px; opacity: .8; font-size: 14px; line-height: 1.4; }
+    #previewWrap { background: linear-gradient(#1c8fb8, #0a4a6b); border-radius: 14px; height: 240px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+    #preview { max-width: 90%; max-height: 90%; }
+    #card label { display: flex; align-items: center; gap: 10px; font-size: 14px; margin-bottom: 14px; }
+    #card input[type=range] { flex: 1; }
+    #actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="hint">Двигайте мышкой, чтобы осматриваться · зажмите кнопку, чтобы плыть быстрее</div>
+  <div id="bar">
+    <button id="clearBtn" title="Убрать нарисованных рыбок" hidden>🗑</button>
+    <button id="fsBtn" title="На весь экран">⛶</button>
+    <button id="addBtn" class="primary">🐟 Добавить рыбку</button>
+  </div>
+  <input id="file" type="file" accept="image/*" hidden />
+  <div id="modal">
+    <div id="card">
+      <h2>Новая рыбка</h2>
+      <p>Рыбка должна смотреть вправо →. Если бумага вырезалась плохо, подвигайте ползунок.</p>
+      <div id="previewWrap"><canvas id="preview"></canvas></div>
+      <label>Вырезание <input id="thr" type="range" min="12" max="140" value="48" /></label>
+      <div id="actions">
+        <button id="flipBtn">⇄ Отзеркалить</button>
+        <button id="cancelBtn">Отмена</button>
+        <button id="okBtn" class="primary">Выпустить в аквариум</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
