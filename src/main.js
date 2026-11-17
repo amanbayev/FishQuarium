@@ -539,26 +539,33 @@ resize();
 const input = { nx: 0, ny: 0, boost: false, keys: new Set(), last: -1e9 };
 const hint = document.getElementById('hint'), bar = document.getElementById('bar');
 const touch = () => { input.last = performance.now(); bar.classList.remove('idle'); };
-canvas.addEventListener('pointermove', (e) => {
-  input.nx = (e.clientX / window.innerWidth) * 2 - 1;
-  input.ny = (e.clientY / window.innerHeight) * 2 - 1;
-  touch();
-});
+// Мышь без нажатия ничего не делает; зажатие и перетаскивание работает как джойстик (удобно на планшете).
+let drag = null;
 canvas.addEventListener('pointerdown', (e) => {
-  input.nx = (e.clientX / window.innerWidth) * 2 - 1;
-  input.ny = (e.clientY / window.innerHeight) * 2 - 1;
-  input.boost = true; touch(); hint.classList.add('hidden');
+  drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  input.nx = 0; input.ny = 0; input.boost = true; touch(); hint.classList.add('hidden');
   canvas.setPointerCapture(e.pointerId);
 });
-const release = (e) => { input.boost = false; if (e.pointerType !== 'mouse') { input.nx = 0; input.ny = 0; } };
+canvas.addEventListener('pointermove', (e) => {
+  touch();
+  if (!drag || drag.id !== e.pointerId) return;
+  const R = Math.min(window.innerWidth, window.innerHeight) * 0.3;
+  input.nx = THREE.MathUtils.clamp((e.clientX - drag.x) / R, -1, 1);
+  input.ny = THREE.MathUtils.clamp((e.clientY - drag.y) / R, -1, 1);
+});
+const release = () => { drag = null; input.boost = false; input.nx = 0; input.ny = 0; };
 canvas.addEventListener('pointerup', release);
 canvas.addEventListener('pointercancel', release);
-window.addEventListener('keydown', (e) => { input.keys.add(e.code); touch(); });
+window.addEventListener('keydown', (e) => {
+  if (modal.classList.contains('open')) return;
+  if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
+  input.keys.add(e.code); touch(); hint.classList.add('hidden');
+});
 window.addEventListener('keyup', (e) => input.keys.delete(e.code));
 window.addEventListener('blur', () => { input.keys.clear(); input.boost = false; });
 setTimeout(() => hint.classList.add('hidden'), 9000);
 
-const cam = { yaw: 0, pitch: 0, roll: 0, speed: 1, yawRate: 0 };
+const cam = { yaw: 0, pitch: 0, roll: 0, speed: 1, yawRate: 0, vy: 0 };
 const dz = (v) => { const a = Math.abs(v); return a < 0.12 ? 0 : Math.sign(v) * (a - 0.12) / 0.88; };
 const _f = new THREE.Vector3();
 
@@ -575,8 +582,11 @@ function updateCamera(dt, t) {
     let kx = (K.has('KeyD') || K.has('ArrowRight') ? 1 : 0) - (K.has('KeyA') || K.has('ArrowLeft') ? 1 : 0);
     yawT = -(dz(input.nx) + kx * 0.8) * 1.3;
     pitchT = -dz(input.ny) * 0.75;
-    const fwd = input.boost || K.has('KeyW') || K.has('ArrowUp') || K.has('Space');
-    speedT = K.has('KeyS') || K.has('ArrowDown') ? -1 : fwd ? 4.2 : 0.9;
+    const fwd = input.boost || K.has('KeyW') || K.has('ArrowUp');
+    speedT = K.has('KeyS') || K.has('ArrowDown') ? -1.5 : fwd ? 4.2 : 0;
+    const vert = (K.has('Space') || K.has('KeyE') ? 1 : 0) - (K.has('ShiftLeft') || K.has('ShiftRight') || K.has('KeyQ') ? 1 : 0);
+    cam.vy += (vert * 2.2 - cam.vy) * Math.min(1, dt * 3);
+    camPos.y += cam.vy * dt;
   }
   // мягко разворачиваемся у границ
   const rad = Math.hypot(camPos.x, camPos.z);
