@@ -14,7 +14,7 @@
       backdrop-filter: blur(6px); transition: opacity 1.2s; pointer-events: none; max-width: 80vw;
     }
     #hint.hidden { opacity: 0; }
-    #bar { position: fixed; right: 18px; bottom: 18px; display: flex; gap: 10px; transition: opacity .6s; }
+    #bar { position: fixed; right: 18px; bottom: 18px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 36px); transition: opacity .6s; }
     #bar.idle { opacity: 0; }
     button {
       font: inherit; font-size: 16px; font-weight: 600; color: #e8f7ff; cursor: pointer;
@@ -38,10 +38,12 @@
 </head>
 <body>
   <canvas id="scene"></canvas>
-  <div id="hint">Стрелки ← → ↑ ↓ — плыть и поворачивать · Пробел / Shift — вверх и вниз · на планшете ведите пальцем</div>
+  <div id="hint">Стрелки ← → ↑ ↓ — плыть и поворачивать · Пробел / Shift — вверх и вниз · F — покормить · L — свет</div>
   <div id="bar">
     <button id="clearBtn" title="Убрать нарисованных рыбок" hidden>🗑</button>
     <button id="fsBtn" title="На весь экран">⛶</button>
+    <button id="lightBtn" title="Лампа аквариума">💡 Свет</button>
+    <button id="feedBtn" title="Покормить рыбок">🍤 Покормить</button>
     <button id="addBtn" class="primary">🐟 Добавить рыбку</button>
   </div>
   <input id="file" type="file" accept="image/*" hidden />

@@ -4,12 +4,12 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // Модель рыбки: нос смотрит в +X, длина 2 (x от -1 до 1), текстура — вид сбоку.
 
 export const SPECIES = [
-  { name: 'clown', h: 0.34, w: 0.46, skew: 1.25, pow: 0.75, dorsal: 0.16, back: '#d9480f', mid: '#ff7a1a', belly: '#ffb066', fin: '#f76707', pattern: 'bands', scale: 0.2, count: 26, speed: 1.0, metal: 0.1 },
-  { name: 'tang', h: 0.5, w: 0.26, skew: 1.3, pow: 0.6, dorsal: 0.14, back: '#e0ac00', mid: '#ffd21a', belly: '#ffe873', fin: '#f2c200', pattern: 'plain', scale: 0.28, count: 30, speed: 1.2, metal: 0.1 },
-  { name: 'blue', h: 0.4, w: 0.3, skew: 1.35, pow: 0.7, dorsal: 0.12, back: '#0a2f8f', mid: '#1c6fe0', belly: '#3d9bff', fin: '#ffd43b', pattern: 'swoosh', scale: 0.3, count: 24, speed: 1.3, metal: 0.15 },
-  { name: 'silver', h: 0.2, w: 0.5, skew: 1.2, pow: 0.8, dorsal: 0.1, back: '#3f5560', mid: '#b9c9d1', belly: '#f4f7f8', fin: '#8fa5b0', pattern: 'silver', scale: 0.17, count: 70, speed: 1.7, metal: 0.65 },
-  { name: 'angel', h: 0.5, w: 0.24, skew: 1.4, pow: 0.55, dorsal: 0.3, back: '#e9ecef', mid: '#ffffff', belly: '#ffffff', fin: '#ffe066', pattern: 'bars', scale: 0.36, count: 14, speed: 0.8, metal: 0.1 },
-  { name: 'grouper', h: 0.36, w: 0.5, skew: 1.3, pow: 0.7, dorsal: 0.14, back: '#4a3b2e', mid: '#84705a', belly: '#c9b89c', fin: '#6b5a48', pattern: 'spots', scale: 1.0, count: 3, speed: 0.5, metal: 0.05 },
+  { name: 'clown', h: 0.34, w: 0.46, skew: 1.25, pow: 0.75, dorsal: 0.16, back: '#d9480f', mid: '#ff7a1a', belly: '#ffb066', fin: '#f76707', pattern: 'bands', scale: 0.24, count: 9, speed: 0.8, metal: 0.1 },
+  { name: 'tang', h: 0.5, w: 0.26, skew: 1.3, pow: 0.6, dorsal: 0.14, back: '#e0ac00', mid: '#ffd21a', belly: '#ffe873', fin: '#f2c200', pattern: 'plain', scale: 0.3, count: 7, speed: 0.9, metal: 0.1 },
+  { name: 'blue', h: 0.4, w: 0.3, skew: 1.35, pow: 0.7, dorsal: 0.12, back: '#0a2f8f', mid: '#1c6fe0', belly: '#3d9bff', fin: '#ffd43b', pattern: 'swoosh', scale: 0.3, count: 7, speed: 1.0, metal: 0.15 },
+  { name: 'neon', h: 0.2, w: 0.5, skew: 1.2, pow: 0.8, dorsal: 0.1, back: '#3f5560', mid: '#b9c9d1', belly: '#f4f7f8', fin: '#e03131', pattern: 'silver', scale: 0.15, count: 24, speed: 1.2, metal: 0.6 },
+  { name: 'angel', h: 0.5, w: 0.24, skew: 1.4, pow: 0.55, dorsal: 0.3, back: '#e9ecef', mid: '#ffffff', belly: '#ffffff', fin: '#ffe066', pattern: 'bars', scale: 0.38, count: 4, speed: 0.6, metal: 0.1 },
+  { name: 'catfish', h: 0.27, w: 0.72, skew: 1.5, pow: 0.7, dorsal: 0.2, back: '#5b4a33', mid: '#b59a6a', belly: '#efe2c0', fin: '#9c845a', pattern: 'spots', scale: 0.3, count: 5, speed: 0.45, metal: 0.05, barbels: true, bottom: true },
 ];
 
 const bodyX = (s) => -0.6 + 1.6 * s;
@@ -82,6 +82,11 @@ export function fishGeometry(sp) {
   for (const sgn of [1, -1]) {
     const W = Hx(0.4, sp) * sp.w * 1.2;
     tris.push([0.45, -0.08, sgn * W * 0.9], [0.08, -0.26, sgn * (W + 0.22)], [0.12, 0.02, sgn * (W + 0.1)]);
+  }
+  // усики сомика
+  if (sp.barbels) for (const sgn of [1, -1]) {
+    tris.push([0.97, -0.03, sgn * 0.03], [0.93, -0.06, sgn * 0.05], [0.7, -0.22, sgn * 0.3]);
+    tris.push([0.95, -0.05, sgn * 0.02], [0.9, -0.07, sgn * 0.03], [0.78, -0.3, sgn * 0.12]);
   }
   const fins = flatGeo(tris);
   const geo = mergeGeometries([body, fins]);
